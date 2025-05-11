@@ -1,0 +1,172 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+class ReservaPage extends StatefulWidget {
+  const ReservaPage({super.key});
+
+  @override
+  State<ReservaPage> createState() => _ReservaPageState();
+}
+
+class _ReservaPageState extends State<ReservaPage> {
+  DateTime? selectedDateTime;
+  int numberOfPeople = 2;
+  int? selectedTable;
+
+  final List<int> mesasDisponiveis = [1, 2, 3, 4, 5, 6];
+
+  Future<void> _selectDateTime() async {
+    DateTime now = DateTime.now();
+
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 30)),
+    );
+
+    if (pickedDate != null) {
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+
+      if (pickedTime != null) {
+        setState(() {
+          selectedDateTime = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+      }
+    }
+  }
+
+  void _confirmarReserva() {
+    if (selectedDateTime == null || selectedTable == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Por favor, selecione data, hora e mesa.'),
+      ));
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirmar Reserva'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Data: ${DateFormat('dd/MM/yyyy HH:mm').format(selectedDateTime!)}'),
+            Text('Pessoas: $numberOfPeople'),
+            Text('Mesa: $selectedTable'),
+            const SizedBox(height: 12),
+            const Text('Você receberá uma notificação de confirmação.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF679EA2)),
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Reserva confirmada com sucesso!'),
+              ));
+            },
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dataHoraFormatada = selectedDateTime != null
+        ? DateFormat('dd/MM/yyyy HH:mm').format(selectedDateTime!)
+        : 'Selecionar data e hora';
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF679EA2),
+        title: const Text('Reserva de Mesa'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF679EA2)),
+              onPressed: _selectDateTime,
+              child: Text(dataHoraFormatada, style: const TextStyle(color: Colors.white)),
+            ),
+            const SizedBox(height: 20),
+            const Text('Número de pessoas:'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove),
+                  onPressed: () {
+                    setState(() {
+                      if (numberOfPeople > 1) {
+                        numberOfPeople--;
+                      }
+                    });
+                  },
+                ),
+                Text('$numberOfPeople', style: const TextStyle(fontSize: 18)),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () {
+                    setState(() {
+                      numberOfPeople++;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const Text('Selecione a mesa:'),
+            DropdownButton<int>(
+              value: selectedTable,
+              hint: const Text('Escolha uma mesa'),
+              items: mesasDisponiveis.map<DropdownMenuItem<int>>((int mesa) {
+                return DropdownMenuItem<int>(
+                  value: mesa,
+                  child: Text('Mesa $mesa'),
+                );
+              }).toList(),
+              onChanged: (int? newValue) {
+                setState(() {
+                  selectedTable = newValue;
+                });
+              },
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF679EA2)),
+              onPressed: _confirmarReserva,
+              child: const Text('Confirmar Reserva', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void main() {
+  runApp(const MaterialApp(
+    home: ReservaPage(),
+  ));
+}
